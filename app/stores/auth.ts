@@ -1,20 +1,34 @@
-// ~/stores/auth.ts
+/**
+ * Authentication Store
+ * Global state management for user authentication using Pinia
+ * Handles login, register, logout, and user session management
+ */
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import type { FetchOptions } from "ofetch";
 import type { User, LoginPayload, RegisterPayload, AuthResponse, MeResponse } from "~/types/auth";
 
-
 export const useAuthStore = defineStore("auth", () => {
   const { $api } = useNuxtApp();
-  // —— الحالة ——
+  
+  // ========== State ==========
+  
+  /** Access token stored in cookie (15min expiry) */
   const accessToken = useCookie<string | null>("access_token", {
     default: () => null,
-    maxAge: 60 * 15,
+    maxAge: 60 * 15, // 15 minutes
     sameSite: "lax",
   });
+  
+  /** Current authenticated user data */
   const currentUser = ref<User | null>(null);
+  
+  /** Loading state for async operations */
   const loading = ref(false);
+  /**
+   * Fetch current user data from API
+   * @returns Promise with user data or null
+   */
   const fetchMe = async () => {
     if (!accessToken.value) {
       currentUser.value = null;
@@ -27,9 +41,13 @@ export const useAuthStore = defineStore("auth", () => {
     return response.data.user;
   };
 
+  /** Computed property to check if user is authenticated */
   const isAuthenticated = computed(() => !!accessToken.value);
   
-  // Initialize user on mount if token exists
+  /**
+   * Initialize user on mount if token exists
+   * Automatically fetches user data on client-side mount
+   */
   if (import.meta.client) {
     onMounted(() => {
       if (!currentUser.value && accessToken.value) {
@@ -41,11 +59,21 @@ export const useAuthStore = defineStore("auth", () => {
     });
   }
   
+  /**
+   * Set access token in cookie
+   * @param token - JWT access token or null to clear
+   */
   const setAccessToken = (token: string | null) => {
     accessToken.value = token;
   };
 
-  // —— عمليات ——
+  // ========== Actions ==========
+  
+  /**
+   * Login user with credentials
+   * @param payload - Login credentials (username, password, provider, otp)
+   * @returns Promise with auth response
+   */
   const login = async (payload: LoginPayload) => {
     loading.value = true;
     try {
@@ -67,6 +95,11 @@ export const useAuthStore = defineStore("auth", () => {
       loading.value = false;
     }
   };
+  /**
+   * Register new user
+   * @param payload - Registration data (name, email, password)
+   * @returns Promise with auth response
+   */
   const register = async (payload: RegisterPayload) => {
     loading.value = true;
     try {
@@ -89,9 +122,13 @@ export const useAuthStore = defineStore("auth", () => {
     }
   };
 
+  /**
+   * Logout user and clear session
+   * Notifies server and clears local state
+   */
   const logout = async () => {
     try {
-      // نفضّل نعلِم السيرفر ليمسح كوكي الـ refresh
+      // Notify server to clear refresh token cookie
       await $api("/auth/logout", {
         method: "POST",
       } as FetchOptions);

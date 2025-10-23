@@ -10,7 +10,7 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      apiBaseUrl: '' // Will be overridden by NUXT_PUBLIC_API_BASE_URL env variable
+      apiBaseUrl: 'https://freestore.ezeestock.com/api'
     }
   }
 })

@@ -1,8 +1,11 @@
+/**
+ * Login Component
+ * Handles user authentication with form validation and error handling
+ */
 <script setup lang="ts">
 import { toTypedSchema } from "@vee-validate/zod";
 import { useForm } from "vee-validate";
-import * as z from "zod";
-import { useAuthStore } from "~/stores/auth";
+import { loginSchema } from "~/utils/validation";
 import { Loader2, User, Lock, LogIn, Shield } from "lucide-vue-next";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,37 +25,40 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { toast } from "vue-sonner";
 
-const formSchema = toTypedSchema(
-  z.object({
-    username: z.string().min(3, "Username must be at least 3 chars."),
-    password: z.string().min(4, "Password must be at least 6 chars."),
-    provider: z.string().default("mgr"),
-    otp: z.string().default(""),
-  })
-);
+// Composables
+const auth = useAuth();
+const toastNotification = useToast();
+const router = useRouter();
 
+// Form setup with centralized validation schema
 const { handleSubmit, isFieldDirty } = useForm({
-  validationSchema: formSchema,
+  validationSchema: toTypedSchema(loginSchema),
   initialValues: { username: "", password: "", provider: "mgr", otp: "" },
 });
-const auth = useAuthStore();
+
+// Error state for displaying API errors
 const errorMessage = ref<string | null>(null);
 
+/**
+ * Handle form submission
+ * Attempts to log in user and redirects on success
+ */
 const onSubmit = handleSubmit(async (values) => {
   errorMessage.value = null;
+  
   try {
     await auth.login(values);
-    toast.success("Login successful! Welcome back.", {
-      description: "Redirecting to dashboard...",
-    });
-    await navigateTo("/");
+    
+    // Show success notification
+    toastNotification.success("Login successful!", "Welcome back to your dashboard");
+    
+    // Redirect to home page
+    await router.push("/");
   } catch (error: any) {
-    errorMessage.value = error?.message || error || "Login failed. Please try again.";
-    toast.error("Login Failed", {
-      description: errorMessage.value,
-    });
+    // Display error message
+    errorMessage.value = error?.message || "Login failed. Please try again.";
+    toastNotification.error("Login Failed", errorMessage.value || undefined);
   }
 });
 </script>
@@ -70,7 +76,7 @@ const onSubmit = handleSubmit(async (values) => {
 
     <form @submit.prevent="onSubmit">
       <CardContent class="space-y-4">
-        <!-- Error Alert -->
+        <!-- Error Alert - Displays API errors -->
         <div
           v-if="errorMessage"
           class="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md"
@@ -78,7 +84,7 @@ const onSubmit = handleSubmit(async (values) => {
           {{ errorMessage }}
         </div>
 
-        <!-- Username Field -->
+        <!-- Username Field - Required for authentication -->
         <FormField
           v-slot="{ componentField }"
           name="username"
@@ -104,7 +110,7 @@ const onSubmit = handleSubmit(async (values) => {
           </FormItem>
         </FormField>
 
-        <!-- Provider Field -->
+        <!-- Provider Field - Authentication provider (default: mgr) -->
         <FormField
           v-slot="{ componentField }"
           name="provider"
@@ -129,7 +135,7 @@ const onSubmit = handleSubmit(async (values) => {
           </FormItem>
         </FormField>
 
-        <!-- Password Field -->
+        <!-- Password Field - User password with forgot password link -->
         <FormField
           v-slot="{ componentField }"
           name="password"
@@ -163,7 +169,7 @@ const onSubmit = handleSubmit(async (values) => {
           </FormItem>
         </FormField>
 
-        <!-- OTP Field (Optional) -->
+        <!-- OTP Field - Optional two-factor authentication code -->
         <FormField
           v-slot="{ componentField }"
           name="otp"
@@ -182,16 +188,16 @@ const onSubmit = handleSubmit(async (values) => {
           </FormItem>
         </FormField>
 
-        <!-- Submit Button -->
+        <!-- Submit Button - Shows loading state during authentication -->
         <Button
           type="submit"
           class="w-full"
-          :disabled="auth.loading"
+:disabled="auth.loading.value"
           size="lg"
         >
-          <Loader2 v-if="auth.loading" class="mr-2 h-4 w-4 animate-spin" />
+<Loader2 v-if="auth.loading.value" class="mr-2 h-4 w-4 animate-spin" />
           <LogIn v-else class="mr-2 h-4 w-4" />
-          {{ auth.loading ? "Signing in..." : "Sign In" }}
+          {{ auth.loading.value ? "Signing in..." : "Sign In" }}
         </Button>
       </CardContent>
 
