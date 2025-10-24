@@ -93,7 +93,7 @@ export const useProducts = () => {
     error.value = null;
 
     try {
-      const response = await api.put<CreateProductResponse>(
+      const response = await api.patch<CreateProductResponse>(
         `/dashboard/products/${id}`,
         payload
       );

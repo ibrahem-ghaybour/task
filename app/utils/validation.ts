@@ -54,11 +54,21 @@ export const productSchema = z.object({
     .string()
     .min(2, "Product name must be at least 2 characters")
     .max(255, "Product name must not exceed 255 characters"),
+  slug: z
+    .string()
+    .optional()
+    .refine(
+      (val) => !val || new RegExp("^[\\p{L}\\p{N}\\-_]+$", "u").test(val),
+      "Slug can only contain letters, numbers, hyphens, and underscores"
+    ),
   sku: z
     .string()
     .min(1, "SKU is required")
     .max(100, "SKU must not exceed 100 characters")
-    .regex(/^[A-Za-z0-9-_]+$/, "SKU can only contain letters, numbers, hyphens, and underscores"),
+    .refine(
+      (val) => new RegExp("^[\\p{L}\\p{N}\\-_]+$", "u").test(val),
+      "SKU can only contain letters, numbers, hyphens, and underscores"
+    ),
   description: z.string().optional().default(""),
   keywords_seo_ar: z.string().optional().default(""),
   keywords_seo_en: z.string().optional().default(""),
@@ -101,6 +111,11 @@ export const productSchema = z.object({
     .number()
     .min(0, "Tax cannot be negative")
     .max(100, "Tax cannot exceed 100%"),
+  weight: z.number().optional().refine((v) => v === undefined || v >= 0, {
+    message: "Weight cannot be negative",
+  }),
+  barcode: z.string().optional(),
+  content: z.string().optional(),
 });
 
 /**

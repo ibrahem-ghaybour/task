@@ -2,6 +2,7 @@
 export interface Product {
   id: number;
   name: string;
+  slug?: string;
   keywords_seo_ar?: string;
   keywords_seo_en?: string;
   description_seo_ar?: string;
@@ -19,12 +20,16 @@ export interface Product {
   selling_price: number;
   tax: number;
   sku: string;
+  weight?: number;
+  barcode?: string;
+  content?: string;
   created_at?: string;
   updated_at?: string;
 }
 
 export interface CreateProductPayload {
   name: string;
+  slug?: string;
   keywords_seo_ar?: string;
   keywords_seo_en?: string;
   description_seo_ar?: string;
@@ -42,6 +47,9 @@ export interface CreateProductPayload {
   selling_price: number;
   tax: number;
   sku: string;
+  weight?: number;
+  barcode?: string;
+  content?: string;
 }
 
 export interface ProductsListResponse {

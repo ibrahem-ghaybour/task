@@ -41,6 +41,14 @@ export const useApi = () => {
     return request<T>(url, { ...options, method: "PUT", body });
   };
 
+  const patch = <T>(
+    url: string,
+    body?: any,
+    options?: FetchOptions<"json", any>
+  ) => {
+    return request<T>(url, { ...options, method: "PATCH", body });
+  };
+
 
   const del = <T>(url: string, options?: FetchOptions<"json", any>) => {
     return request<T>(url, { ...options, method: "DELETE" });
@@ -51,6 +59,7 @@ export const useApi = () => {
     get,
     post,
     put,
+    patch,
     delete: del,
   };
 };
