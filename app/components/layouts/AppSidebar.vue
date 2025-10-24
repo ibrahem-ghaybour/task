@@ -20,7 +20,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 
 // Composables
-const auth = useAuth();
+const authStore = useAuthStore();
 const toastNotification = useToast();
 const router = useRouter();
 
@@ -48,7 +48,7 @@ const items = [
  */
 const handleLogout = async () => {
   try {
-    await auth.logout();
+    await authStore.logout();
     toastNotification.success("Logged out successfully");
   } catch (error: any) {
     toastNotification.error("Logout failed", error.message);
@@ -59,18 +59,13 @@ const handleLogout = async () => {
  * Get user initials for avatar
  */
 const userInitials = computed(() => {
-  if (!auth.currentUser.value?.name) return "U";
-  return auth.currentUser.value.name
-    .split(" ")
-    .map(n => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
+  return "U";
 });
+  
 </script>
 
 <template>
-  <Sidebar>
+  <Sidebar >
     <!-- Header with Logo -->
     <SidebarHeader class="border-b p-4">
       <div class="flex items-center gap-2">
@@ -105,7 +100,7 @@ const userInitials = computed(() => {
 
     <!-- Footer with User Info -->
     <SidebarFooter class="border-t p-4">
-      <div v-if="auth.isAuthenticated.value" class="space-y-3">
+      <div v-if="authStore.isAuthenticated" class="space-y-3">
         <!-- User Info -->
         <div class="flex items-center gap-3">
           <Avatar>
@@ -115,10 +110,10 @@ const userInitials = computed(() => {
           </Avatar>
           <div class="flex-1 overflow-hidden">
             <p class="text-sm font-medium truncate">
-              {{ auth.currentUser.value?.name || "User" }}
+              User
             </p>
             <p class="text-xs text-muted-foreground truncate">
-              {{ auth.currentUser.value?.email || "" }}
+              Authenticated
             </p>
           </div>
         </div>
@@ -128,11 +123,11 @@ const userInitials = computed(() => {
           variant="outline"
           size="sm"
           class="w-full"
-          :disabled="auth.loading.value"
+          :disabled="authStore.loading"
           @click="handleLogout"
         >
           <LogOut class="mr-2 h-4 w-4" />
-          {{ auth.loading.value ? "Logging out..." : "Logout" }}
+          {{ authStore.loading ? "Logging out..." : "Logout" }}
         </Button>
       </div>
 

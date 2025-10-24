@@ -8,10 +8,8 @@ definePageMeta({
 
 <template>
   <div class="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 p-4">
-    <!-- Background Pattern -->
     <div class="absolute inset-0 bg-grid-pattern opacity-5 pointer-events-none"></div>
     
-    <!-- Content -->
     <div class="relative z-10">
       <Login />
     </div>

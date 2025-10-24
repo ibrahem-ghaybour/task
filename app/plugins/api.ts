@@ -1,133 +1,105 @@
 import type { FetchOptions } from "ofetch";
 import { ofetch } from "ofetch";
 import { useAuthStore } from "@/stores/auth";
+
 const RETRY_KEY = Symbol("retry");
 
-type PendingRequest = {
-  resolve: (token: string) => void;
-  reject: (err: any) => void;
+// -------- Helpers --------
+
+/** يدمج الهيدرز ويضيف Authorization */
+const withAuthHeader = (
+  headers: FetchOptions["headers"],
+  token: string
+): Record<string, string> => {
+  const hObj: Record<string, string> = {};
+  if (headers instanceof Headers) {
+    headers.forEach((v, k) => (hObj[k] = v));
+  } else if (Array.isArray(headers)) {
+    headers.forEach(([k, v]) => (hObj[k] = (v as string) ?? ""));
+  } else if (headers) {
+    Object.assign(hObj, headers as Record<string, string>);
+  }
+  // لا نُكرر Bearer إن كان موجودًا بالأساس
+  hObj.Authorization = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
+  return hObj;
 };
+
+/** يفك payload للـ JWT بطريقة تعمل على المتصفح والسيرفر */
+const decodeJwtPayload = (token: string): any | null => {
+  try {
+    const parts = token.split(".");
+    if (parts.length < 2) return null;
+    const b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const json =
+      process.client
+        ? atob(b64)
+        : Buffer.from(b64, "base64").toString("utf-8");
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+};
+
+/** يتحقق من انتهاء صلاحية التوكن (بهامش أمان) */
+const isAccessTokenExpired = (token?: string | null) => {
+  if (!token) return true;
+  const payload = decodeJwtPayload(token);
+  if (!payload || typeof payload.exp !== "number") return true;
+  const now = Math.floor(Date.now() / 1000);
+  const skew = 20; // هامش أمان بالثواني
+  return now >= Math.floor(payload.exp) - skew;
+};
+
+/** تسجيل الخروج والتوجيه للّوجن */
+const forceLogoutAndRedirect = async () => {
+  const auth = useAuthStore();
+  auth.logout?.();
+  // تجنب استخدام navigateTo على السيرفر
+  if (process.client) {
+    const { navigateTo } = await import("#app");
+    navigateTo("/login");
+  }
+};
+
+// -------- Nuxt Plugin --------
 
 export default defineNuxtPlugin((nuxtApp) => {
   const config = useRuntimeConfig();
-  const baseURL = config.public.apiBaseUrl;
-
-  let isRefreshing = false;
-  let failedQueue: PendingRequest[] = [];
-
-  const processQueue = (error: any, token: string | null = null) => {
-    failedQueue.forEach(({ resolve, reject }) => {
-      if (error || !token) reject(error || new Error("No token"));
-      else resolve(token);
-    });
-    failedQueue = [];
-  };
-
-  const withAuthHeader = (
-    headers: FetchOptions["headers"],
-    token: string
-  ): Record<string, string> => {
-    const hObj: Record<string, string> = {};
-    if (headers instanceof Headers) {
-      headers.forEach((v, k) => (hObj[k] = v));
-    } else if (Array.isArray(headers)) {
-      headers.forEach(([k, v]) => (hObj[k] = v as string));
-    } else if (headers) {
-      Object.assign(hObj, headers as Record<string, string>);
-    }
-    hObj.Authorization = `Bearer ${token}`;
-    return hObj;
-  };
-
-  // تحقق من انتهاء صلاحية التوكن (JWT exp) مع هامش أمان
-  const isAccessTokenExpired = () => {
-    const auth = useAuthStore();
-    try {
-      if (!auth.accessToken) return true;
-      const [, payloadB64] = auth.accessToken.split(".");
-      if (!payloadB64) return true;
-      const payload = JSON.parse(
-        atob(payloadB64.replace(/-/g, "+").replace(/_/g, "/"))
-      );
-      // console.log(payload);
-      const now = Math.floor(Date.now() / 1000);
-      const skew = 20; // ثواني أمان
-      return typeof payload.exp === "number"
-        ? now >= payload.exp - skew
-        : false;
-    } catch {
-      return true;
-    }
-  };
-
-  // تحديث التوكن single-flight مع طابور للطلبات المتزامنة
-  const refreshToken = async (): Promise<string> => {
-    const auth = useAuthStore();
-
-    if (isRefreshing) {
-      return new Promise<string>((resolve, reject) => {
-        failedQueue.push({ resolve, reject });
-      });
-    }
-
-    isRefreshing = true;
-    try {
-      const response = await api<{ data: { access_token: string } }>("/auth/refresh", {
-        method: "POST",
-        
-        noAuth: true, // مهم: لا نرسل Authorization في التحديث
-      } as any);
-
-      const newToken = response.data.access_token;
-      await auth.setAccessToken(newToken);
-      processQueue(null, newToken);
-      return newToken;
-    } catch (err) {
-      processQueue(err, null);
-      const auth = useAuthStore();
-      auth.logout();
-      throw err;
-    } finally {
-      isRefreshing = false;
-    }
-  };
+  const baseURL = config.public.apiBaseUrl; // تأكد من ضبطه في nuxt.config
 
   const api = ofetch.create({
     baseURL,
-    
 
-    // قبل الإرسال: نتأكد من وجود توكن صالح
-    async onRequest({ request, options }) {
+    // قبل كل طلب
+    async onRequest({ options }) {
       const auth = useAuthStore();
 
+      // Flag لمنع إعادة المحاولة اللانهائية عند 401
       (options as any)[RETRY_KEY] = (options as any)[RETRY_KEY] ?? false;
 
-      // طلبات عامة أو /auth/refresh
+      // طلبات عامة (مثل /api/login)
       if ((options as any).noAuth) return;
 
-      // لو لا يوجد توكن أو منتهي: نحدّث أولاً
-      if (!auth.accessToken || isAccessTokenExpired()) {
-        try {
-          const newToken = await refreshToken();
-          (options as any).headers = withAuthHeader(options.headers, newToken);
-          return;
-        } catch {
-          // فشل التحديث—سيُرجع السيرفر 401 ونكون قد عملنا logout
-          return;
-        }
+      // لو لا يوجد توكن أو منتهي → خروج وتوجيه
+      if (isAccessTokenExpired(auth.accessToken)) {
+        await forceLogoutAndRedirect();
+        // نسمح للطلب أن يُرسل بدون توكن (قد يكون endpoint عام)،
+        // لكن غالباً سيُرفض من السيرفر.
+        return;
       }
 
-      // توكن صالح
+      // توكن صالح → أضف الهيدر
       (options as any).headers = withAuthHeader(
         options.headers,
-        auth.accessToken
+        auth.accessToken as string
       );
     },
 
-    // معالجة الأخطاء وإعادة المحاولة بعد 401 مرة واحدة
+    // بعد الرد مع خطأ
     async onResponseError({ request, response, options }) {
       const auth = useAuthStore();
 
+      // لو 401 ولم نحاول قبل كذا
       if (
         response?.status === 401 &&
         !(options as any)[RETRY_KEY] &&
@@ -135,19 +107,14 @@ export default defineNuxtPlugin((nuxtApp) => {
       ) {
         (options as any)[RETRY_KEY] = true;
 
-        try {
-          const newToken = await refreshToken();
-          (options as any).headers = withAuthHeader(options.headers, newToken);
-          // مهم: إعادة الطلب مع نفس الـ request + options
-          return api(request as any, options as any);
-        } catch (err) {
-          auth.logout();
-          return Promise.reject(err);
-        }
+        // لا يوجد refresh في الـ API → نسجل خروج ونوجه
+        await forceLogoutAndRedirect();
+        return Promise.reject(response?._data ?? response);
       }
 
+      // أرجع رسالة واضحة
       throw (
-        response?._data?.errors[0]?.msg ??
+        response?._data?.errors?.[0]?.msg ??
         response?._data?.message ??
         response?._data ??
         response
@@ -176,6 +143,7 @@ declare module "vue" {
 // السماح بخيار noAuth داخل ofetch
 declare module "ofetch" {
   interface FetchOptions {
+    /** اجعلها true للطلبات العامة مثل /api/login */
     noAuth?: boolean;
   }
 }

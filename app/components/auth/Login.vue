@@ -1,7 +1,4 @@
-/**
- * Login Component
- * Handles user authentication with form validation and error handling
- */
+
 <script setup lang="ts">
 import { toTypedSchema } from "@vee-validate/zod";
 import { useForm } from "vee-validate";
@@ -26,39 +23,26 @@ import {
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 
-// Composables
-const auth = useAuth();
+const authStore = useAuthStore();
 const toastNotification = useToast();
 const router = useRouter();
 
-// Form setup with centralized validation schema
 const { handleSubmit, isFieldDirty } = useForm({
   validationSchema: toTypedSchema(loginSchema),
   initialValues: { username: "", password: "", provider: "mgr", otp: "" },
 });
 
-// Error state for displaying API errors
-const errorMessage = ref<string | null>(null);
 
-/**
- * Handle form submission
- * Attempts to log in user and redirects on success
- */
 const onSubmit = handleSubmit(async (values) => {
-  errorMessage.value = null;
   
   try {
-    await auth.login(values);
+    await authStore.login(values);
     
-    // Show success notification
     toastNotification.success("Login successful!", "Welcome back to your dashboard");
     
-    // Redirect to home page
     await router.push("/");
   } catch (error: any) {
-    // Display error message
-    errorMessage.value = error?.message || "Login failed. Please try again.";
-    toastNotification.error("Login Failed", errorMessage.value || undefined);
+    toastNotification.error("Login Failed", error?.message || undefined);
   }
 });
 </script>
@@ -76,15 +60,14 @@ const onSubmit = handleSubmit(async (values) => {
 
     <form @submit.prevent="onSubmit">
       <CardContent class="space-y-4">
-        <!-- Error Alert - Displays API errors -->
+        <!-- Error Display -->
         <div
-          v-if="errorMessage"
+          v-if="authStore.error"
           class="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md"
         >
-          {{ errorMessage }}
+          {{ authStore.error }}
         </div>
 
-        <!-- Username Field - Required for authentication -->
         <FormField
           v-slot="{ componentField }"
           name="username"
@@ -110,7 +93,6 @@ const onSubmit = handleSubmit(async (values) => {
           </FormItem>
         </FormField>
 
-        <!-- Provider Field - Authentication provider (default: mgr) -->
         <FormField
           v-slot="{ componentField }"
           name="provider"
@@ -135,7 +117,6 @@ const onSubmit = handleSubmit(async (values) => {
           </FormItem>
         </FormField>
 
-        <!-- Password Field - User password with forgot password link -->
         <FormField
           v-slot="{ componentField }"
           name="password"
@@ -169,7 +150,7 @@ const onSubmit = handleSubmit(async (values) => {
           </FormItem>
         </FormField>
 
-        <!-- OTP Field - Optional two-factor authentication code -->
+        <!-- OTP Field - Optional two-factor authentication code -->  
         <FormField
           v-slot="{ componentField }"
           name="otp"
@@ -192,12 +173,12 @@ const onSubmit = handleSubmit(async (values) => {
         <Button
           type="submit"
           class="w-full"
-:disabled="auth.loading.value"
+:disabled="authStore.loading"
           size="lg"
         >
-<Loader2 v-if="auth.loading.value" class="mr-2 h-4 w-4 animate-spin" />
+<Loader2 v-if="authStore.loading" class="mr-2 h-4 w-4 animate-spin" />
           <LogIn v-else class="mr-2 h-4 w-4" />
-          {{ auth.loading.value ? "Signing in..." : "Sign In" }}
+          {{ authStore.loading ? "Signing in..." : "Sign In" }}
         </Button>
       </CardContent>
 

@@ -2,6 +2,7 @@
  * Products Composable
  * Handles all product-related API operations with loading and error states
  */
+import { toast } from "vue-sonner";
 import type {
   CreateProductPayload,
   ProductsListResponse,

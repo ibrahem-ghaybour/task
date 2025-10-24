@@ -1,19 +1,11 @@
-/**
- * Products List Page
- * Displays paginated product list with CRUD operations
- * Uses composables for data fetching and state management
- */
+
 <script setup lang="ts">
-import { useProductsStore } from "~/stores/products";
-import { Package, Plus, Eye, Trash2, Loader2, ChevronLeft, ChevronRight, AlertCircle } from "lucide-vue-next";
+import type { Product } from "~/types/product";
+import { Package, Plus, Loader2 } from "lucide-vue-next";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import ProductCard from "@/components/products/ProductCard.vue";
+import Pagination from "@/components/products/Pagination.vue";
 
 // Page metadata - requires authentication
 definePageMeta({
@@ -22,11 +14,17 @@ definePageMeta({
 
 // Composables
 const productsApi = useProducts();
-const productsStore = useProductsStore();
 const toastNotification = useToast();
 const router = useRouter();
 
-// Loading state for delete operations
+// State
+const products = ref<Product[]>([]);
+const pagination = ref({
+  current_page: 1,
+  per_page: 5,
+  total: 0,
+  last_page: 1,
+});
 const deletingId = ref<number | null>(null);
 
 /**
@@ -46,10 +44,10 @@ const loadProducts = async (page: number, perPage: number) => {
   try {
     const response = await productsApi.fetchProducts(page, perPage);
     
-    // Update store with fetched data
-    productsStore.products = response.data.products;
+    // Update local state with fetched data
+    products.value = response.data.products;
     if (response.data.pagination) {
-      productsStore.pagination = response.data.pagination;
+      pagination.value = response.data.pagination;
     }
   } catch (error: any) {
     toastNotification.error(
@@ -64,7 +62,7 @@ const loadProducts = async (page: number, perPage: number) => {
  * @param page - Target page number
  */
 const goToPage = async (page: number) => {
-  await loadProducts(page, productsStore.pagination.per_page);
+  await loadProducts(page, pagination.value.per_page);
 };
 
 /**
@@ -82,8 +80,8 @@ const handleDelete = async (id: number) => {
   try {
     await productsApi.deleteProduct(id);
     
-    // Remove from store
-    productsStore.products = productsStore.products.filter(p => p.id !== id);
+    // Remove from local state
+    products.value = products.value.filter(p => p.id !== id);
     
     toastNotification.success("Product deleted successfully");
   } catch (error: any) {
@@ -114,6 +112,7 @@ const createProduct = () => {
 
 <template>
   <div class="space-y-6">
+    <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-4xl font-bold">Products</h1>
@@ -134,7 +133,7 @@ const createProduct = () => {
     </div>
 
     <!-- Empty State -->
-    <Card v-else-if="!productsStore.products.length" class="py-20">
+    <Card v-else-if="!products.length" class="py-20">
       <CardContent class="flex flex-col items-center justify-center text-center">
         <Package class="h-16 w-16 text-muted-foreground mb-4" />
         <h3 class="text-xl font-semibold mb-2">No products found</h3>
@@ -149,156 +148,26 @@ const createProduct = () => {
     </Card>
 
     <!-- Products Grid -->
-    <div v-else>
+    <div v-else class="space-y-8">
       <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <Card
-          v-for="product in productsStore.products"
+        <ProductCard
+          v-for="product in products"
           :key="product.id"
-          class="hover:shadow-lg transition-shadow"
-        >
-          <CardHeader>
-            <div class="flex items-start justify-between">
-              <div class="flex-1">
-                <CardTitle class="line-clamp-1">{{ product.name }}</CardTitle>
-                <CardDescription class="mt-1">
-                  SKU: {{ product.sku }}
-                </CardDescription>
-              </div>
-              <div
-                v-if="product.featured"
-                class="px-2 py-1 text-xs font-semibold bg-primary/10 text-primary rounded"
-              >
-                Featured
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div class="space-y-3">
-              <!-- Price Info -->
-              <div class="flex items-center justify-between">
-                <span class="text-sm text-muted-foreground">Selling Price</span>
-                <span class="font-semibold">${{ product.selling_price }}</span>
-              </div>
-
-              <!-- Stock Info -->
-              <div class="flex items-center justify-between">
-                <span class="text-sm text-muted-foreground">Stock</span>
-                <span
-                  :class="[
-                    'font-semibold',
-                    product.quantity > 0 ? 'text-green-600' : 'text-red-600',
-                  ]"
-                >
-                  {{ product.quantity }} units
-                </span>
-              </div>
-
-              <!-- Online Status -->
-              <div class="flex items-center justify-between">
-                <span class="text-sm text-muted-foreground">Status</span>
-                <span
-                  :class="[
-                    'px-2 py-1 text-xs font-semibold rounded',
-                    product.isOnline
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-gray-100 text-gray-700',
-                  ]"
-                >
-                  {{ product.isOnline ? "Online" : "Offline" }}
-                </span>
-              </div>
-
-              <!-- Actions -->
-              <div class="flex gap-2 pt-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  class="flex-1"
-                  @click="viewProduct(product.id)"
-                >
-                  <Eye class="mr-2 h-4 w-4" />
-                  View
-                </Button>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  :disabled="deletingId === product.id"
-                  @click="handleDelete(product.id)"
-                >
-                  <Loader2 v-if="deletingId === product.id" class="h-4 w-4 animate-spin" />
-                  <Trash2 v-else class="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          :product="product"
+          :is-deleting="deletingId === product.id"
+          @view="viewProduct"
+          @delete="handleDelete"
+        />
       </div>
 
-      <!-- Pagination -->
-      <div
-        v-if="productsStore.pagination.last_page > 1"
-        class="flex items-center justify-center gap-2 mt-8"
-      >
-        <Button
-          variant="outline"
-          size="sm"
-          :disabled="productsStore.pagination.current_page === 1"
-          @click="goToPage(productsStore.pagination.current_page - 1)"
-        >
-          <ChevronLeft class="h-4 w-4" />
-        </Button>
-
-        <div class="flex items-center gap-1">
-          <template
-            v-for="page in productsStore.pagination.last_page"
-            :key="page"
-          >
-            <Button
-              v-if="
-                page === 1 ||
-                page === productsStore.pagination.last_page ||
-                Math.abs(page - productsStore.pagination.current_page) <= 1
-              "
-              :variant="
-                page === productsStore.pagination.current_page
-                  ? 'default'
-                  : 'outline'
-              "
-              size="sm"
-              @click="goToPage(page)"
-            >
-              {{ page }}
-            </Button>
-            <span
-              v-else-if="
-                page === productsStore.pagination.current_page - 2 ||
-                page === productsStore.pagination.current_page + 2
-              "
-              class="px-2"
-            >
-              ...
-            </span>
-          </template>
-        </div>
-
-        <Button
-          variant="outline"
-          size="sm"
-          :disabled="
-            productsStore.pagination.current_page ===
-            productsStore.pagination.last_page
-          "
-          @click="goToPage(productsStore.pagination.current_page + 1)"
-        >
-          <ChevronRight class="h-4 w-4" />
-        </Button>
-      </div>
-
-      <!-- Pagination Info -->
-      <p class="text-center text-sm text-muted-foreground mt-4">
-        Showing {{ productsStore.products.length }} of
-        {{ productsStore.pagination.total }} products
-      </p>
+      <!-- Pagination Component -->
+      <Pagination
+        :current-page="pagination.current_page"
+        :total-pages="pagination.last_page"
+        :total-items="pagination.total"
+        :displayed-items="products.length"
+        @change-page="goToPage"
+      />
     </div>
   </div>
 </template>

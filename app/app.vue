@@ -7,7 +7,7 @@ import { Toaster } from "@/components/ui/sonner";
       <nuxt-layout>
         <nuxt-page />
       </nuxt-layout>
-      <Toaster class="pointer-events-auto" />
+        <Toaster />
     </div>
   </div>
 </template>
