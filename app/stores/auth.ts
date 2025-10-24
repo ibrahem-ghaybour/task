@@ -45,17 +45,15 @@ export const useAuthStore = defineStore("auth", () => {
     }
   };
 
-  const logout = async () => {
-    accessToken.value = null;
-    loading.value = true;
-    error.value = null;
-    toast.success("Logged out successfully");
-    
-    setTimeout(() => {
-      loading.value = false;
-      navigateTo("/auth/login");
-    }, 500);
-  };
+const logout = async () => {
+  loading.value = true;
+  await new Promise((resolve) => setTimeout(resolve, 500));
+  loading.value = false;
+  toast.success("Logged out successfully");
+  accessToken.value = null;
+  navigateTo("/auth/login");
+};
+
 
   return {
     accessToken,

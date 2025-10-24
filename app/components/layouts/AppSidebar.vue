@@ -19,12 +19,9 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 
-// Composables
 const authStore = useAuthStore();
-const toastNotification = useToast();
 const router = useRouter();
 
-// Menu items
 const items = [
   {
     title: "Dashboard",
@@ -43,30 +40,20 @@ const items = [
   },
 ];
 
-/**
- * Handle user logout
- */
+
 const handleLogout = async () => {
-  try {
     await authStore.logout();
-    toastNotification.success("Logged out successfully");
-  } catch (error: any) {
-    toastNotification.error("Logout failed", error.message);
-  }
 };
 
-/**
- * Get user initials for avatar
- */
+
 const userInitials = computed(() => {
   return "U";
 });
-  
+
 </script>
 
 <template>
   <Sidebar >
-    <!-- Header with Logo -->
     <SidebarHeader class="border-b p-4">
       <div class="flex items-center gap-2">
         <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
@@ -79,7 +66,6 @@ const userInitials = computed(() => {
       </div>
     </SidebarHeader>
 
-    <!-- Navigation Menu -->
     <SidebarContent>
       <SidebarGroup>
         <SidebarGroupLabel>Navigation</SidebarGroupLabel>
@@ -98,10 +84,8 @@ const userInitials = computed(() => {
       </SidebarGroup>
     </SidebarContent>
 
-    <!-- Footer with User Info -->
     <SidebarFooter class="border-t p-4">
       <div v-if="authStore.isAuthenticated" class="space-y-3">
-        <!-- User Info -->
         <div class="flex items-center gap-3">
           <Avatar>
             <AvatarFallback class="bg-primary text-primary-foreground">
@@ -118,7 +102,6 @@ const userInitials = computed(() => {
           </div>
         </div>
 
-        <!-- Logout Button -->
         <Button
           variant="outline"
           size="sm"
@@ -131,7 +114,6 @@ const userInitials = computed(() => {
         </Button>
       </div>
 
-      <!-- Login Prompt -->
       <div v-else class="text-center">
         <p class="text-sm text-muted-foreground mb-2">Not logged in</p>
         <Button

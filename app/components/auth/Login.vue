@@ -1,4 +1,3 @@
-
 <script setup lang="ts">
 import { toTypedSchema } from "@vee-validate/zod";
 import { useForm } from "vee-validate";
@@ -32,23 +31,14 @@ const { handleSubmit, isFieldDirty } = useForm({
   initialValues: { username: "", password: "", provider: "mgr", otp: "" },
 });
 
-
 const onSubmit = handleSubmit(async (values) => {
-  
-  try {
-    await authStore.login(values);
-    
-    toastNotification.success("Login successful!", "Welcome back to your dashboard");
-    
-    await router.push("/");
-  } catch (error: any) {
-    toastNotification.error("Login Failed", error?.message || undefined);
-  }
+  await authStore.login(values);
+  router.push("/");
 });
 </script>
 
 <template>
-  <Card class="w-full max-w-md">
+  <Card class="w-full max-w-lg">
     <CardHeader class="space-y-1">
       <CardTitle class="text-3xl font-bold text-center">
         Welcome Back
@@ -60,14 +50,6 @@ const onSubmit = handleSubmit(async (values) => {
 
     <form @submit.prevent="onSubmit">
       <CardContent class="space-y-4">
-        <!-- Error Display -->
-        <div
-          v-if="authStore.error"
-          class="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md"
-        >
-          {{ authStore.error }}
-        </div>
-
         <FormField
           v-slot="{ componentField }"
           name="username"
@@ -150,7 +132,7 @@ const onSubmit = handleSubmit(async (values) => {
           </FormItem>
         </FormField>
 
-        <!-- OTP Field - Optional two-factor authentication code -->  
+        <!-- OTP Field - Optional two-factor authentication code -->
         <FormField
           v-slot="{ componentField }"
           name="otp"
@@ -173,27 +155,14 @@ const onSubmit = handleSubmit(async (values) => {
         <Button
           type="submit"
           class="w-full"
-:disabled="authStore.loading"
+          :disabled="authStore.loading"
           size="lg"
         >
-<Loader2 v-if="authStore.loading" class="mr-2 h-4 w-4 animate-spin" />
+          <Loader2 v-if="authStore.loading" class="mr-2 h-4 w-4 animate-spin" />
           <LogIn v-else class="mr-2 h-4 w-4" />
           {{ authStore.loading ? "Signing in..." : "Sign In" }}
         </Button>
       </CardContent>
-
-      <CardFooter class="flex flex-col space-y-4">
-        <div class="relative w-full">
-          <div class="absolute inset-0 flex items-center">
-            <Separator class="w-full" />
-          </div>
-          <div class="relative flex justify-center text-xs uppercase">
-            <span class="bg-card px-2 text-muted-foreground">
-              Don't have an account?
-            </span>
-          </div>
-        </div>
-      </CardFooter>
     </form>
   </Card>
 </template>

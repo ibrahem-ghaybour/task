@@ -12,14 +12,12 @@ import { Separator } from "@/components/ui/separator";
   <SidebarProvider>
     <AppSidebar />
     <SidebarInset>
-      <!-- Mobile Header -->
       <header class="flex h-16 shrink-0 items-center gap-2 border-b px-4 md:hidden">
         <SidebarTrigger class="-ml-1" />
         <Separator orientation="vertical" class="mr-2 h-4" />
         <h1 class="text-lg font-semibold">Product Manager</h1>
       </header>
       
-      <!-- Main Content -->
       <main class="flex-1 overflow-auto">
         <div class="p-4 md:p-6 lg:p-8">
           <slot />
