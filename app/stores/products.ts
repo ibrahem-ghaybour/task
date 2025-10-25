@@ -1,198 +1,137 @@
-/**
- * Products Store
- * Global state management for products using Pinia
- * Stores product data, pagination, and loading states
- */
-import { defineStore } from "pinia";
 import { ref } from "vue";
-import type { FetchOptions } from "ofetch";
+import { defineStore } from "pinia";
 import type {
-  Product,
   CreateProductPayload,
   ProductsListResponse,
   ProductDetailResponse,
   CreateProductResponse,
+  Product,
+  Pagination,
 } from "~/types/product";
 
 export const useProductsStore = defineStore("products", () => {
-  const { $api } = useNuxtApp();
-
-  // ========== State ==========
-  
-  /** Array of products for list view */
   const products = ref<Product[]>([]);
-  
-  /** Currently selected product for detail view */
-  const currentProduct = ref<Product | null>(null);
-  
-  /** Loading state for async operations */
+  const pagination = ref<Pagination | null>(null);
+  const productDetail = ref<Product | null>(null);
   const loading = ref(false);
-  
-  /** Pagination metadata */
-  const pagination = ref({
-    current_page: 1,
-    per_page: 5,
-    total: 0,
-    last_page: 1,
-  });
+  const error = ref<string | null>(null);
 
-  // ========== Actions ==========
+  const api = useApi();
+  const toast = useToast();
 
-  /**
-   * Fetch paginated products list
-   * @param page - Page number (default: 1)
-   * @param perPage - Items per page (default: 5)
-   * @returns Promise with products response
-   */
-  const fetchProducts = async (page: number = 1, perPage: number = 5) => {
+  async function fetchProducts(page: number = 1, perPage: number = 5) {
     loading.value = true;
+    error.value = null;
+
     try {
-      const response = await $api<ProductsListResponse>(
-        `/dashboard/products?page=${page}&per_page=${perPage}`,
-        {
-          method: "GET",
-        } as FetchOptions<"json", any>
+      const response = await api.get<ProductsListResponse>(
+        `/dashboard/products?page=${page}&per_page=${perPage}`
       );
-
-      products.value = response.data.products;
-      if (response.data.pagination) {
-        pagination.value = response.data.pagination;
-      }
-
+      products.value = response.data;
+      pagination.value = response.meta;
       return response;
-    } catch (error) {
-      console.error("Failed to fetch products:", error);
-      throw error;
+    } catch (err: any) {
+      error.value = err.message;
+      toast.error("Failed to load products");
+      throw err;
     } finally {
       loading.value = false;
     }
-  };
+  }
 
-  /**
-   * Fetch single product details by ID
-   * @param id - Product ID
-   * @returns Promise with product response
-   */
-  const fetchProductById = async (id: number) => {
+  async function fetchProductById(id: number) {
     loading.value = true;
-    try {
-      const response = await $api<ProductDetailResponse>(
-        `/dashboard/products/${id}`,
-        {
-          method: "GET",
-        } as FetchOptions<"json", any>
-      );
+    error.value = null;
 
-      currentProduct.value = response.data.product;
+    try {
+      const response = await api.get<ProductDetailResponse>(
+        `/dashboard/products/${id}`
+      );
+      productDetail.value = response.data;
       return response;
-    } catch (error) {
-      console.error(`Failed to fetch product ${id}:`, error);
-      throw error;
+    } catch (err: any) {
+      error.value = err.message;
+      toast.error("Failed to load product details");
+      throw err;
     } finally {
       loading.value = false;
     }
-  };
+  }
 
-  /**
-   * Create a new product
-   * @param payload - Product data
-   * @returns Promise with created product response
-   */
-  const createProduct = async (payload: CreateProductPayload) => {
+  async function createProduct(payload: CreateProductPayload) {
     loading.value = true;
+    error.value = null;
+
     try {
-      const response = await $api<CreateProductResponse>(
+      const response = await api.post<CreateProductResponse>(
         "/dashboard/products",
-        {
-          method: "POST",
-          body: payload,
-        } as FetchOptions<"json", any>
+        payload
       );
-
-      // Add new product to the list
-      if (response.data.product) {
-        products.value.unshift(response.data.product);
-      }
-
+      toast.success("Product created successfully!");
+      await fetchProducts();
       return response;
-    } catch (error) {
-      console.error("Failed to create product:", error);
-      throw error;
+    } catch (err: any) {
+      error.value = err.message;
+      toast.error("Failed to create product");
+      throw err;
     } finally {
       loading.value = false;
     }
-  };
+  }
 
-  /**
-   * Update an existing product
-   * @param id - Product ID to update
-   * @param payload - Updated product data (partial)
-   * @returns Promise with updated product response
-   */
-  const updateProduct = async (id: number, payload: Partial<CreateProductPayload>) => {
+  async function updateProduct(id: number, payload: Partial<CreateProductPayload>) {
     loading.value = true;
+    error.value = null;
+
     try {
-      const response = await $api<CreateProductResponse>(
+      const response = await api.patch<CreateProductResponse>(
         `/dashboard/products/${id}`,
-        {
-          method: "PUT",
-          body: payload,
-        } as FetchOptions<"json", any>
+        payload
       );
-
-      // Update product in the list
-      const index = products.value.findIndex((p) => p.id === id);
-      if (index !== -1 && response.data.product) {
-        products.value[index] = response.data.product;
-      }
-
-      if (currentProduct.value?.id === id && response.data.product) {
-        currentProduct.value = response.data.product;
-      }
-
+      toast.success("Product updated successfully!");
+      await fetchProducts();
       return response;
-    } catch (error) {
-      console.error(`Failed to update product ${id}:`, error);
-      throw error;
+    } catch (err: any) {
+      error.value = err.message;
+      toast.error("Failed to update product");
+      throw err;
     } finally {
       loading.value = false;
     }
-  };
+  }
 
-  /**
-   * Delete a product by ID
-   * @param id - Product ID to delete
-   * @returns Promise that resolves when deletion is complete
-   */
-  const deleteProduct = async (id: number) => {
+  async function deleteProduct(id: number) {
     loading.value = true;
+    error.value = null;
+
     try {
-      await $api(`/dashboard/products/${id}`, {
-        method: "DELETE",
-      } as FetchOptions);
-
-      // Remove product from the list
+      await api.delete(`/dashboard/products/${id}`);
       products.value = products.value.filter((p) => p.id !== id);
+      toast.success("Product deleted");
+    } catch (err: any) {
+      error.value = err.message;
 
-      if (currentProduct.value?.id === id) {
-        currentProduct.value = null;
+      // ✅ معالجة خاصة للمنتجات المستوردة
+      const msg = err.response?._data?.message;
+      if (msg?.includes("imported")) {
+        toast.warning("This product was imported and cannot be deleted.");
+      } else {
+        toast.error("Failed to delete product");
       }
-    } catch (error) {
-      console.error(`Failed to delete product ${id}:`, error);
-      throw error;
+
+      throw err;
     } finally {
       loading.value = false;
     }
-  };
+  }
 
+  // 🧾 التصدير النهائي
   return {
-    // State
     products,
-    currentProduct,
-    loading,
     pagination,
-
-    // Actions
+    productDetail,
+    loading,
+    error,
     fetchProducts,
     fetchProductById,
     createProduct,

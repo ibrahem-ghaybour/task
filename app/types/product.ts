@@ -51,25 +51,21 @@ export interface CreateProductPayload {
   barcode?: string;
   content?: string;
 }
-
+export interface Pagination {
+  current_page: number;
+  per_page: number;
+  total: number;
+  last_page: number;
+}
 export interface ProductsListResponse {
-  data: {
-    products: Product[];
-    pagination?: {
-      current_page: number;
-      per_page: number;
-      total: number;
-      last_page: number;
-    };
-  };
+  data: Product[];
+  meta: Pagination;
   status: number;
   message: string;
 }
 
 export interface ProductDetailResponse {
-  data: {
-    product: Product;
-  };
+    data: Product;
   status: number;
   message: string;
 }

@@ -25,9 +25,11 @@ export const useProducts = () => {
     error.value = null;
 
     try {
+      console.log(`Fetching products: page=${page}, perPage=${perPage}`);
       const response = await api.get<ProductsListResponse>(
         `/dashboard/products?page=${page}&per_page=${perPage}`
       );
+      console.log('Raw API response:', response);
       return response;
     } catch (err: any) {
       error.value = err.message;

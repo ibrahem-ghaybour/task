@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import type { FetchOptions } from "ofetch";
-import type { LoginPayload,AuthResponse } from "~/types/auth";
+import type { LoginPayload, AuthResponse } from "~/types/auth";
 
 export const useAuthStore = defineStore("auth", () => {
   const { $api } = useNuxtApp();
@@ -13,7 +13,6 @@ export const useAuthStore = defineStore("auth", () => {
     maxAge: 60 * 15,
     sameSite: "lax",
   });
-  
 
   const isAuthenticated = computed(() => !!accessToken.value);
 
@@ -21,23 +20,24 @@ export const useAuthStore = defineStore("auth", () => {
     accessToken.value = token;
   };
 
-
   const login = async (payload: LoginPayload) => {
     loading.value = true;
     try {
       const res = await $api<AuthResponse>("/login", {
         method: "POST",
         body: payload,
-        noAuth:true
+        noAuth: true,
       } as FetchOptions<"json", any>);
-      toast.success(res.message)
-      console.log("Login successful:", res.message);
+      if (res.status === 200) {
+        toast.success(res.message);
+      } else {
+        toast.error(res.message);
+      }
       setAccessToken(res.data.access_token);
-      
-      
+
       return res;
     } catch (err: any) {
-      toast.error(err.message)
+      toast.error(err.message);
       error.value = err.message;
       throw err;
     } finally {
@@ -45,15 +45,14 @@ export const useAuthStore = defineStore("auth", () => {
     }
   };
 
-const logout = async () => {
-  loading.value = true;
-  await new Promise((resolve) => setTimeout(resolve, 500));
-  loading.value = false;
-  toast.success("Logged out successfully");
-  accessToken.value = null;
-  navigateTo("/auth/login");
-};
-
+  const logout = async () => {
+    loading.value = true;
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    loading.value = false;
+    toast.success("Logged out successfully");
+    accessToken.value = null;
+    navigateTo("/auth/login");
+  };
 
   return {
     accessToken,
