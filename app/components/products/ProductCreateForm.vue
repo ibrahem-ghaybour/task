@@ -210,7 +210,7 @@ const onSubmit = handleSubmit(async (formValues) => {
     }
     
     // Submit the form
-    await createProduct(submitData);
+    await createProduct(payload);
     
     toast.success("Product created successfully!");
     router.push("/products");

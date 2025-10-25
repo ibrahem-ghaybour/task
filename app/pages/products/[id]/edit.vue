@@ -24,12 +24,9 @@ onMounted(async () => {
 });
 
 const handleSubmit = async (payload: any) => {
-    console.log("payload")
   try {
     if (!product.value) return;
-    console.log("payload")
     await productsStore.updateProduct(product.value.id, payload);
-    console.log("product",product.value)
     toast.success("Product updated successfully");
     router.push(`/products/${product.value.id}`);
   } catch (e: any) {
