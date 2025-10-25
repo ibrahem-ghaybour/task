@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
+import { useForm } from "vee-validate";
+import { toTypedSchema } from "@vee-validate/zod";
 import { Save, Loader2, Upload, X } from "lucide-vue-next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +24,7 @@ import {
 import { useCatalog } from "~/composables/useCatalog";
 import { useProducts } from "~/composables/useProducts";
 import { useToast } from "~/composables/useToast";
+import { productSchema } from "~/utils/validation";
 
 // ✅ Form state
 const router = useRouter();
@@ -29,33 +32,62 @@ const { createProduct } = useProducts();
 const toast = useToast();
 const catalog = useCatalog();
 
-// ✅ Form data
-const formData = ref({
-  name: "",
-  slug: "",
-  keywords_seo_ar: "",
-  keywords_seo_en: "",
-  description_seo_ar: "",
-  description_seo_en: "",
-  description: "",
-  category: "",
-  brand: "",
-  unit: "",
-  quantity: 0,
-  featured: 0,
-  isOnline: 0,
-  online_units: 1,
-  max_order: 0,
-  buying_price: 0,
-  selling_price: 0,
-  tax: 0,
-  sku: "",
-  weight: 0,
-  barcode: "",
-  content: "",
-  price: 0,
-  item_isdisabled: 1,
+// ✅ Form validation
+const { handleSubmit, defineField, errors } = useForm({
+  validationSchema: toTypedSchema(productSchema),
+  initialValues: {
+    name: "",
+    slug: "",
+    keywords_seo_ar: "",
+    keywords_seo_en: "",
+    description_seo_ar: "",
+    description_seo_en: "",
+    description: "",
+    category: 0,
+    brand: 0,
+    unit: 0,
+    quantity: 0,
+    featured: 0 as 0 | 1,
+    isOnline: 0 as 0 | 1,
+    online_units: 1,
+    max_order: 0,
+    buying_price: 0,
+    selling_price: 0,
+    tax: 0,
+    sku: "",
+    weight: 0,
+    barcode: "",
+    content: "",
+    price: 0,
+    Item_Isdisabled: 1,
+  },
 });
+
+// ✅ Define form fields
+const [name] = defineField("name");
+const [slug] = defineField("slug");
+const [keywords_seo_ar] = defineField("keywords_seo_ar");
+const [keywords_seo_en] = defineField("keywords_seo_en");
+const [description_seo_ar] = defineField("description_seo_ar");
+const [description_seo_en] = defineField("description_seo_en");
+const [description] = defineField("description");
+const [category] = defineField("category");
+const [brand] = defineField("brand");
+const [unit] = defineField("unit");
+const [quantity] = defineField("quantity");
+const [featured] = defineField("featured");
+const [isOnline] = defineField("isOnline");
+const [online_units] = defineField("online_units");
+const [max_order] = defineField("max_order");
+const [buying_price] = defineField("buying_price");
+const [selling_price] = defineField("selling_price");
+const [tax] = defineField("tax");
+const [sku] = defineField("sku");
+const [weight] = defineField("weight");
+const [barcode] = defineField("barcode");
+const [content] = defineField("content");
+const [price] = defineField("price");
+const [Item_Isdisabled] = defineField("Item_Isdisabled");
 
 // ✅ Catalog data
 const categories = ref<any[]>([]);
@@ -80,9 +112,9 @@ onMounted(async () => {
       catalog.fetchUnits(),
     ]);
 
-    categories.value = categoriesRes.data || [];
-    brands.value = brandsRes.data || [];
-    units.value = unitsRes.data || [];
+    categories.value = categoriesRes?.data || [];
+    brands.value = brandsRes?.data || [];
+    units.value = unitsRes?.data || [];
   } catch (error) {
     console.error("Error loading catalog data:", error);
     toast.error("Failed to load catalog data");
@@ -117,17 +149,52 @@ const removeImage = (index: number) => {
 };
 
 // ✅ Handle form submission
-const handleSubmit = async () => {
+const onSubmit = handleSubmit(async (formValues) => {
   isSubmitting.value = true;
   
   try {
-    // Create FormData
+    // Debug: Log form values to see what's being sent
+    console.log("Form values being submitted:", formValues);
+    
+    // Create structured payload like ProductForm.vue
+    const payload = {
+      name: formValues.name,
+      slug: formValues.slug || "",
+      keywords_seo_ar: formValues.keywords_seo_ar || "",
+      keywords_seo_en: formValues.keywords_seo_en || "",
+      description_seo_ar: formValues.description_seo_ar || "",
+      description_seo_en: formValues.description_seo_en || "",
+      description: formValues.description || "",
+      category: Number(formValues.category),
+      brand: Number(formValues.brand),
+      unit: Number(formValues.unit),
+      quantity: Number(formValues.quantity),
+      featured: Number(formValues.featured) as 0 | 1,
+      isOnline: Number(formValues.isOnline) as 0 | 1,
+      online_units: Number(formValues.online_units) || 1,
+      max_order: Number(formValues.max_order),
+      buying_price: Number(formValues.buying_price),
+      selling_price: Number(formValues.selling_price),
+      tax: Number(formValues.tax),
+      sku: formValues.sku,
+      weight: Number(formValues.weight),
+      barcode: formValues.barcode || "",
+      content: formValues.content || "",
+      price: Number(formValues.price),
+      Item_Isdisabled: Number(formValues.Item_Isdisabled),
+    };
+    
+    console.log("Structured payload:", payload);
+    console.log("online_units value:", payload.online_units);
+    
+    // Create FormData for file uploads
     const submitData = new FormData();
     
-    // Add all form fields
-    Object.entries(formData.value).forEach(([key, value]) => {
+    // Add all payload fields to FormData
+    Object.entries(payload).forEach(([key, value]) => {
       if (value !== null && value !== undefined) {
         submitData.append(key, value.toString());
+        console.log(`Added field: ${key} = ${value}`);
       }
     });
     
@@ -135,6 +202,12 @@ const handleSubmit = async () => {
     selectedImages.value.forEach((file, index) => {
       submitData.append(`images[${index}]`, file);
     });
+    
+    // Debug: Log all FormData entries
+    console.log("FormData entries:");
+    for (let [key, value] of submitData.entries()) {
+      console.log(`${key}: ${value}`);
+    }
     
     // Submit the form
     await createProduct(submitData);
@@ -148,12 +221,8 @@ const handleSubmit = async () => {
   } finally {
     isSubmitting.value = false;
   }
-};
+});
 
-// ✅ Handle input changes
-const updateField = (field: string, value: any) => {
-  (formData.value as any)[field] = value;
-};
 </script>
 
 <template>
@@ -165,7 +234,7 @@ const updateField = (field: string, value: any) => {
       </Button>
     </div>
 
-    <form @submit.prevent="handleSubmit" class="space-y-6">
+    <form @submit="onSubmit" class="space-y-6">
       <!-- Basic Information -->
       <Card>
         <CardHeader>
@@ -177,11 +246,12 @@ const updateField = (field: string, value: any) => {
               <FormLabel>Product Name *</FormLabel>
               <FormControl>
                 <Input 
-                  v-model="formData.name" 
+                  v-model="name" 
                   placeholder="Enter product name" 
                   required 
                 />
               </FormControl>
+              <FormMessage />
             </FormItem>
           </FormField>
 
@@ -190,10 +260,11 @@ const updateField = (field: string, value: any) => {
               <FormLabel>Slug</FormLabel>
               <FormControl>
                 <Input 
-                  v-model="formData.slug" 
+                  v-model="slug" 
                   placeholder="Enter URL slug" 
                 />
               </FormControl>
+              <FormMessage />
             </FormItem>
           </FormField>
 
@@ -202,11 +273,12 @@ const updateField = (field: string, value: any) => {
               <FormLabel>Description</FormLabel>
               <FormControl>
                 <textarea
-                  v-model="formData.description"
+                  v-model="description"
                   class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   placeholder="Enter product description"
                 />
               </FormControl>
+              <FormMessage />
             </FormItem>
           </FormField>
 
@@ -216,10 +288,11 @@ const updateField = (field: string, value: any) => {
                 <FormLabel>SEO Keywords (Arabic)</FormLabel>
                 <FormControl>
                   <Input 
-                    v-model="formData.keywords_seo_ar" 
+                    v-model="keywords_seo_ar" 
                     placeholder="Enter Arabic SEO keywords" 
                   />
                 </FormControl>
+                <FormMessage />
               </FormItem>
             </FormField>
 
@@ -228,10 +301,11 @@ const updateField = (field: string, value: any) => {
                 <FormLabel>SEO Keywords (English)</FormLabel>
                 <FormControl>
                   <Input 
-                    v-model="formData.keywords_seo_en" 
+                    v-model="keywords_seo_en" 
                     placeholder="Enter English SEO keywords" 
                   />
                 </FormControl>
+                <FormMessage />
               </FormItem>
             </FormField>
           </div>
@@ -242,10 +316,11 @@ const updateField = (field: string, value: any) => {
                 <FormLabel>SEO Description (Arabic)</FormLabel>
                 <FormControl>
                   <Input 
-                    v-model="formData.description_seo_ar" 
+                    v-model="description_seo_ar" 
                     placeholder="Enter Arabic SEO description" 
                   />
                 </FormControl>
+                <FormMessage />
               </FormItem>
             </FormField>
 
@@ -254,10 +329,11 @@ const updateField = (field: string, value: any) => {
                 <FormLabel>SEO Description (English)</FormLabel>
                 <FormControl>
                   <Input 
-                    v-model="formData.description_seo_en" 
+                    v-model="description_seo_en" 
                     placeholder="Enter English SEO description" 
                   />
                 </FormControl>
+                <FormMessage />
               </FormItem>
             </FormField>
           </div>
@@ -278,8 +354,8 @@ const updateField = (field: string, value: any) => {
               <FormLabel>Category *</FormLabel>
               <FormControl>
                 <Select 
-                  :model-value="formData.category" 
-                  @update:model-value="(value) => updateField('category', value)"
+                  :model-value="category" 
+                  @update:model-value="(value) => category = Number(value)"
                   :disabled="catalogLoading"
                 >
                   <SelectTrigger>
@@ -287,15 +363,16 @@ const updateField = (field: string, value: any) => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem 
-                      v-for="category in categories" 
-                      :key="category.id" 
-                      :value="category.id.toString()"
+                      v-for="categoryItem in categories" 
+                      :key="categoryItem?.id" 
+                      :value="categoryItem?.id?.toString()"
                     >
-                      {{ category.name }}
+                      {{ categoryItem?.name }}
                     </SelectItem>
                   </SelectContent>
                 </Select>
               </FormControl>
+              <FormMessage />
             </FormItem>
           </FormField>
 
@@ -304,8 +381,8 @@ const updateField = (field: string, value: any) => {
               <FormLabel>Brand *</FormLabel>
               <FormControl>
                 <Select 
-                  :model-value="formData.brand" 
-                  @update:model-value="(value) => updateField('brand', value)"
+                  :model-value="brand" 
+                  @update:model-value="(value) => brand = Number(value)"
                   :disabled="catalogLoading"
                 >
                   <SelectTrigger>
@@ -313,15 +390,16 @@ const updateField = (field: string, value: any) => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem 
-                      v-for="brand in brands" 
-                      :key="brand.id" 
-                      :value="brand.id.toString()"
+                      v-for="brandItem in brands" 
+                      :key="brandItem?.id" 
+                      :value="brandItem?.id?.toString()"
                     >
-                      {{ brand.name }}
+                      {{ brandItem?.name }}
                     </SelectItem>
                   </SelectContent>
                 </Select>
               </FormControl>
+              <FormMessage />
             </FormItem>
           </FormField>
 
@@ -330,8 +408,8 @@ const updateField = (field: string, value: any) => {
               <FormLabel>Unit *</FormLabel>
               <FormControl>
                 <Select 
-                  :model-value="formData.unit" 
-                  @update:model-value="(value) => updateField('unit', value)"
+                  :model-value="unit" 
+                  @update:model-value="(value) => unit = Number(value)"
                   :disabled="catalogLoading"
                 >
                   <SelectTrigger>
@@ -339,15 +417,16 @@ const updateField = (field: string, value: any) => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem 
-                      v-for="unit in units" 
-                      :key="unit.id" 
-                      :value="unit.id.toString()"
+                      v-for="unitItem in units" 
+                      :key="unitItem?.id" 
+                      :value="unitItem?.id?.toString()"
                     >
-                      {{ unit.name }}
+                      {{ unitItem?.name }}
                     </SelectItem>
                   </SelectContent>
                 </Select>
               </FormControl>
+              <FormMessage />
             </FormItem>
           </FormField>
         </CardContent>
@@ -364,11 +443,12 @@ const updateField = (field: string, value: any) => {
               <FormLabel>SKU *</FormLabel>
               <FormControl>
                 <Input 
-                  v-model="formData.sku" 
+                  v-model="sku" 
                   placeholder="Enter SKU" 
                   required 
                 />
               </FormControl>
+              <FormMessage />
             </FormItem>
           </FormField>
 
@@ -377,10 +457,11 @@ const updateField = (field: string, value: any) => {
               <FormLabel>Barcode</FormLabel>
               <FormControl>
                 <Input 
-                  v-model="formData.barcode" 
+                  v-model="barcode" 
                   placeholder="Enter barcode" 
                 />
               </FormControl>
+              <FormMessage />
             </FormItem>
           </FormField>
 
@@ -390,40 +471,43 @@ const updateField = (field: string, value: any) => {
                 <FormLabel>Quantity *</FormLabel>
                 <FormControl>
                   <Input 
-                    v-model.number="formData.quantity" 
+                    v-model.number="quantity" 
                     type="number" 
                     min="0" 
                     placeholder="0" 
                   />
                 </FormControl>
+                <FormMessage />
               </FormItem>
             </FormField>
 
-            <FormField name="online_units">
+            <!-- <FormField name="online_units">
               <FormItem>
                 <FormLabel>Online Units *</FormLabel>
                 <FormControl>
                   <Input 
-                    v-model.number="formData.online_units" 
+                    v-model.number="online_units" 
                     type="number" 
                     min="1" 
                     placeholder="1" 
                   />
                 </FormControl>
+                <FormMessage />
               </FormItem>
-            </FormField>
+            </FormField> -->
 
             <FormField name="max_order">
               <FormItem>
                 <FormLabel>Max Order</FormLabel>
                 <FormControl>
                   <Input 
-                    v-model.number="formData.max_order" 
+                    v-model.number="max_order" 
                     type="number" 
                     min="0" 
                     placeholder="0" 
                   />
                 </FormControl>
+                <FormMessage />
               </FormItem>
             </FormField>
           </div>
@@ -433,13 +517,14 @@ const updateField = (field: string, value: any) => {
               <FormLabel>Weight (kg)</FormLabel>
               <FormControl>
                 <Input 
-                  v-model.number="formData.weight" 
+                  v-model.number="weight" 
                   type="number" 
                   step="0.01" 
                   min="0" 
                   placeholder="0.00" 
                 />
               </FormControl>
+              <FormMessage />
             </FormItem>
           </FormField>
 
@@ -451,7 +536,7 @@ const updateField = (field: string, value: any) => {
                   <div class="flex items-center gap-2">
                     <input 
                       id="featured" 
-                      v-model.number="formData.featured" 
+                      v-model.number="featured" 
                       type="checkbox" 
                       :true-value="1" 
                       :false-value="0" 
@@ -461,6 +546,7 @@ const updateField = (field: string, value: any) => {
                     </label>
                   </div>
                 </FormControl>
+                <FormMessage />
               </FormItem>
             </FormField>
 
@@ -471,7 +557,7 @@ const updateField = (field: string, value: any) => {
                   <div class="flex items-center gap-2">
                     <input 
                       id="online" 
-                      v-model.number="formData.isOnline" 
+                      v-model.number="isOnline" 
                       type="checkbox" 
                       :true-value="1" 
                       :false-value="0" 
@@ -481,6 +567,7 @@ const updateField = (field: string, value: any) => {
                     </label>
                   </div>
                 </FormControl>
+                <FormMessage />
               </FormItem>
             </FormField>
           </div>
@@ -499,13 +586,14 @@ const updateField = (field: string, value: any) => {
                 <FormLabel>Buying Price</FormLabel>
                 <FormControl>
                   <Input 
-                    v-model.number="formData.buying_price" 
+                    v-model.number="buying_price" 
                     type="number" 
                     step="0.01" 
                     min="0" 
                     placeholder="0.00" 
                   />
                 </FormControl>
+                <FormMessage />
               </FormItem>
             </FormField>
 
@@ -514,13 +602,14 @@ const updateField = (field: string, value: any) => {
                 <FormLabel>Selling Price</FormLabel>
                 <FormControl>
                   <Input 
-                    v-model.number="formData.selling_price" 
+                    v-model.number="selling_price" 
                     type="number" 
                     step="0.01" 
                     min="0" 
                     placeholder="0.00" 
                   />
                 </FormControl>
+                <FormMessage />
               </FormItem>
             </FormField>
 
@@ -529,7 +618,7 @@ const updateField = (field: string, value: any) => {
                 <FormLabel>Final Price *</FormLabel>
                 <FormControl>
                   <Input 
-                    v-model.number="formData.price" 
+                    v-model.number="price" 
                     type="number" 
                     step="0.01" 
                     min="0" 
@@ -537,6 +626,7 @@ const updateField = (field: string, value: any) => {
                     required 
                   />
                 </FormControl>
+                <FormMessage />
               </FormItem>
             </FormField>
           </div>
@@ -546,7 +636,7 @@ const updateField = (field: string, value: any) => {
               <FormLabel>Tax (%)</FormLabel>
               <FormControl>
                 <Input 
-                  v-model.number="formData.tax" 
+                  v-model.number="tax" 
                   type="number" 
                   step="0.01" 
                   min="0" 
@@ -554,6 +644,7 @@ const updateField = (field: string, value: any) => {
                   placeholder="0.00" 
                 />
               </FormControl>
+              <FormMessage />
             </FormItem>
           </FormField>
         </CardContent>
@@ -617,11 +708,12 @@ const updateField = (field: string, value: any) => {
               <FormLabel>Rich Content</FormLabel>
               <FormControl>
                 <textarea
-                  v-model="formData.content"
+                  v-model="content"
                   class="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   placeholder="Enter rich content (HTML supported)"
                 />
               </FormControl>
+              <FormMessage />
             </FormItem>
           </FormField>
         </CardContent>
@@ -633,18 +725,19 @@ const updateField = (field: string, value: any) => {
           <CardTitle>Status</CardTitle>
         </CardHeader>
         <CardContent class="space-y-4">
-          <FormField name="item_isdisabled">
+          <FormField name="Item_Isdisabled">
             <FormItem>
               <FormLabel>Item Disabled Status</FormLabel>
               <FormControl>
                 <Input 
-                  v-model.number="formData.item_isdisabled" 
+                  v-model.number="Item_Isdisabled" 
                   type="number" 
                   min="0" 
                   max="1" 
                   placeholder="0 or 1" 
                 />
               </FormControl>
+              <FormMessage />
             </FormItem>
           </FormField>
         </CardContent>

@@ -15,25 +15,19 @@ export interface Unit {
 }
 
 export interface CategoriesResponse {
-  data: {
-    categories: Category[];
-  };
+  data: Category[];
   status: number;
   message: string;
 }
 
 export interface BrandsResponse {
-  data: {
-    brands: Brand[];
-  };
+  data: Brand[];
   status: number;
   message: string;
 }
 
 export interface UnitsResponse {
-  data: {
-    units: Unit[];
-  };
+  data: Unit[];
   status: number;
   message: string;
 }
