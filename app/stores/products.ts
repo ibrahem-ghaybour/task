@@ -63,7 +63,7 @@ export const useProductsStore = defineStore("products", () => {
     error.value = null;
 
     try {
-      const response = await api.post<CreateProductResponse>(
+      const response = await api.patch<CreateProductResponse>(
         "/dashboard/products",
         payload
       );

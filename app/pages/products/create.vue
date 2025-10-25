@@ -25,6 +25,6 @@ const handleCancel = () => router.push("/products");
 
 <template>
   <div class="space-y-6">
-    <ProductForm :loading="loading" submit-text="Create Product" @submit="console.log('submit')" @cancel="handleCancel" />
+    <ProductForm :loading="loading" submit-text="Create Product" @submit="handleSubmit" @cancel="handleCancel" />
   </div>
 </template>

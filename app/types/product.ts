@@ -23,6 +23,8 @@ export interface Product {
   weight?: number;
   barcode?: string;
   content?: string;
+  price?: number;
+  Item_Isdisabled?: number;
   created_at?: string;
   updated_at?: string;
 }
@@ -50,6 +52,8 @@ export interface CreateProductPayload {
   weight?: number;
   barcode?: string;
   content?: string;
+  price: number;
+  Item_Isdisabled: number;
 }
 export interface Pagination {
   current_page: number;
