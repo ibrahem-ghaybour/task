@@ -1,9 +1,10 @@
 // Auth Types
 export interface User {
   id: number;
-  name: string;
+  username: string;
+  role: string;
   email: string;
-  // Add other user properties as needed
+  permissions: string[];
 }
 
 export interface LoginPayload {
@@ -31,9 +32,7 @@ export interface AuthResponse {
 }
 
 export interface MeResponse {
-  data: {
-    user: User;
-  };
+  data: User;
   status: number;
   message: string;
 }

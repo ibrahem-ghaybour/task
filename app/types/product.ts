@@ -8,9 +8,9 @@ export interface Product {
   description_seo_ar?: string;
   description_seo_en?: string;
   description: string;
-  category: number;
-  brand: number;
-  unit: number;
+  category: number | { id: number; name: string };
+  brand: number | { id: number; name: string };
+  unit: number | { id: number; name: string };
   quantity: number;
   featured: 0 | 1;
   isOnline: 0 | 1;
@@ -25,6 +25,17 @@ export interface Product {
   content?: string;
   price?: number;
   Item_Isdisabled?: number;
+  images?: string[];
+  item_balance?: number;
+  sections?: Array<{
+    id: number;
+    name: string;
+    items: Array<{
+      id: number;
+      key: string;
+      value: string;
+    }>;
+  }>;
   created_at?: string;
   updated_at?: string;
 }

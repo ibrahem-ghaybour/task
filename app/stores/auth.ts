@@ -1,11 +1,12 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import type { FetchOptions } from "ofetch";
-import type { LoginPayload, AuthResponse } from "~/types/auth";
+import type { LoginPayload, AuthResponse, MeResponse, User } from "~/types/auth";
 
 export const useAuthStore = defineStore("auth", () => {
   const { $api } = useNuxtApp();
   const toast = useToast();
+  const user = ref<User | null>(null);
   const loading = ref(false);
   const error = ref<string | null>(null);
   const accessToken = useCookie<string | null>("access_token", {
@@ -34,7 +35,7 @@ export const useAuthStore = defineStore("auth", () => {
         toast.error(res.message);
       }
       setAccessToken(res.data.access_token);
-
+      myProfile();
       return res;
     } catch (err: any) {
       toast.error(err.message);
@@ -54,13 +55,31 @@ export const useAuthStore = defineStore("auth", () => {
     navigateTo("/auth/login");
   };
 
+  const myProfile = async () => {
+    try {
+    loading.value = true;
+      const res = await $api<MeResponse>("/dashboard/me", {
+        method: "GET",
+      } as FetchOptions<"json", any>);
+      user.value = res.data;
+    } catch (err: any) {
+      toast.error(err.message);
+      error.value = err.message;
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+
   return {
     accessToken,
     error,
     loading,
     isAuthenticated,
+    user,
     setAccessToken,
     login,
     logout,
+    myProfile,
   };
 });

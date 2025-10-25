@@ -18,7 +18,9 @@ const products = ref<Product[]>([]);
 const deletingId = ref<number | null>(null);
 const perPageOptions = [5, 10, 20, 50];
 onMounted( () => {
-    loadProducts(1, pagination.value?.per_page || 5);
+  if(productsStore.products.length === 0) {
+    productsStore.fetchProducts(1, pagination.value?.per_page || 5);
+  }
 });
 
 const loadProducts = (page: number, perPage: number) => {

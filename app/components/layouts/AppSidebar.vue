@@ -20,6 +20,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 
 const authStore = useAuthStore();
+const currentUser = computed(() => authStore.user);
 const router = useRouter();
 
 const items = [
@@ -94,10 +95,10 @@ const userInitials = computed(() => {
           </Avatar>
           <div class="flex-1 overflow-hidden">
             <p class="text-sm font-medium truncate">
-              User
+              {{ currentUser?.username || 'Guest' }}
             </p>
             <p class="text-xs text-muted-foreground truncate">
-              Authenticated
+              {{ currentUser?.email || 'No email' }}
             </p>
           </div>
         </div>

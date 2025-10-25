@@ -6,6 +6,12 @@
 import AppSidebar from "~/components/layouts/AppSidebar.vue";
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
+import { useAuthStore } from "~/stores/auth";
+
+const authStore = useAuthStore();
+onMounted(() => {
+  authStore.myProfile();
+});
 </script>
 
 <template>
@@ -15,7 +21,7 @@ import { Separator } from "@/components/ui/separator";
       <header class="flex h-16 shrink-0 items-center gap-2 border-b px-4 md:hidden">
         <SidebarTrigger class="-ml-1" />
         <Separator orientation="vertical" class="mr-2 h-4" />
-        <h1 class="text-lg font-semibold">Product Manager</h1>
+        <h1 class="text-lg font-semibold">{{ authStore.user?.username || 'Guest' }}</h1>
       </header>
       
       <main class="flex-1 overflow-auto">
