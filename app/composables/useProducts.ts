@@ -64,7 +64,7 @@ export const useProducts = () => {
    * Create new product
    * @param payload - Product data
    */
-  const createProduct = async (payload: CreateProductPayload) => {
+  const createProduct = async (payload: FormData | CreateProductPayload) => {
     loading.value = true;
     error.value = null;
 
