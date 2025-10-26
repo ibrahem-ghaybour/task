@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Pagination from "@/components/products/Pagination.vue";
 import ProductTable from "@/components/products/ProductTable.vue";
+import Input from "~/components/ui/input/Input.vue";
 
 
 
@@ -36,7 +37,8 @@ const handlePerPageChange =  (newPerPage: number) => {
   productsStore.pagination!.per_page = newPerPage;
    loadProducts(1, newPerPage);
 };
-
+const search = ref("");
+const productsList = computed(() => productsStore.products.filter(product => product.name.toLowerCase().includes(search.value.toLowerCase())));
 
 const handleDelete = async (id: number) => {
   // if (!confirm("Delete this product? This action cannot be undone.")) return;
@@ -64,9 +66,15 @@ const createProduct = () => router.push("/products/create");
         <Package class="h-5 w-5" />
         <h1 class="text-xl font-semibold">Products</h1>
       </div>
+        <Input
+        v-model="search"
+        placeholder="Search products..."
+        class="w-64"
+      />
       <Button size="sm" @click="createProduct">
         <Plus class="mr-2 h-4 w-4" /> New Product
       </Button>
+    
     </div>
 
     <div v-if="productsStore.loading" class="flex items-center justify-center py-8">
@@ -77,7 +85,7 @@ const createProduct = () => router.push("/products/create");
     <div v-if="!productsStore.loading" class="text-sm text-muted-foreground mb-4">
       <div class="flex items-center justify-between">
         <div>
-          <p>Products loaded: {{ products.length }}</p>
+          <p>Products loaded: {{ productsList.length }}</p>
           <p>Pagination: Page {{ pagination?.current_page }} of {{ pagination?.last_page }}</p>
           <p>Total items: {{ pagination?.total }}</p>
         </div>
@@ -101,7 +109,7 @@ const createProduct = () => router.push("/products/create");
     </div>
 
     <ProductTable
-      :products="productsStore.products"
+      :products="productsList"
       :deleting-id="deletingId"
       @view="viewProduct"
       @edit="editProduct"
@@ -112,7 +120,7 @@ const createProduct = () => router.push("/products/create");
       <Pagination :disabled="productsStore.loading" @goToPage="goToPage($event)" :total="pagination?.total" :current-page="pagination?.current_page" />
 
       <p class="text-center text-sm text-muted-foreground">
-        Showing {{ productsStore.products.length }} of {{ pagination?.total }} items
+        Showing {{ productsList.length }} of {{ pagination?.total }} items
       </p>
     </div>
     
