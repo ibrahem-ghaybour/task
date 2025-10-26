@@ -177,11 +177,7 @@ const setMainImage = (imageUrl: string) => {
               </p>
               <p class="text-sm text-gray-500 mt-1">Tax: {{ product.tax }}</p>
             </div>
-            <button
-              class="bg-green-600 text-white rounded-xl px-6 py-3 font-medium hover:bg-green-700 transition"
-            >
-              🛒 Add to Cart
-            </button>
+          
           </CardContent>
         </Card>
       </div>
