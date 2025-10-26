@@ -117,7 +117,7 @@ const createProduct = () => router.push("/products/create");
     />
 
     <div class="space-y-4">
-      <Pagination :disabled="productsStore.loading" @goToPage="goToPage($event)" :total="pagination?.total" :current-page="pagination?.current_page" />
+      <Pagination :disabled="productsStore.loading" @goToPage="goToPage($event)" :total="pagination?.total" :current-page="pagination?.current_page" :items-per-page="pagination?.per_page" />
 
       <p class="text-center text-sm text-muted-foreground">
         Showing {{ productsList.length }} of {{ pagination?.total }} items

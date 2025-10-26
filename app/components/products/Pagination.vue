@@ -7,48 +7,43 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination"
-const Props = defineProps({
-  itemsPerPage: {
-    type: Number,
-    default: 10,
-  },
-  total: {
-    type: Number,
-    default: 0,
-  },
-  defaultPage: {
-    type: Number,
-    default: 1,
-  },
-  disabled: {
-    type: Boolean,
-    default: false,
-  },
+
+const props = defineProps({
+  itemsPerPage: { type: Number, default: 10 },
+  total: { type: Number, default: 0 },
+  defaultPage: { type: Number, default: 1 },
+  disabled: { type: Boolean, default: false },
 })
+
 const emit = defineEmits(['goToPage'])
 const goToPage = (page: number) => emit('goToPage', page)
 </script>
 
 <template>
-  <Pagination v-slot="{ page }" :items-per-page="Props.itemsPerPage" :total="Props.total" :default-page="Props.defaultPage">
+  <Pagination
+    v-slot="{ page }"
+    :items-per-page="props.itemsPerPage"
+    :total="props.total"
+    :default-page="props.defaultPage"
+  >
     <PaginationContent v-slot="{ items }">
-      <PaginationPrevious />
+      <PaginationPrevious :disabled="props.disabled" />
 
-      <template v-for="(item, index) in items" :key="index">
+      <template v-for="item in items" :key="item">
         <PaginationItem
           v-if="item.type === 'page'"
           @click="goToPage(item.value)"
-          :value="item.value"
           :is-active="item.value === page"
-          :disabled="Props.disabled"
+          :value="item.value"
+          :disabled="props.disabled"
         >
-          {{ item.value }}
+          {{ String(item.value) }}
         </PaginationItem>
       </template>
 
-      <PaginationEllipsis :index="4" />
+      <PaginationEllipsis />
 
-      <PaginationNext />
+      <PaginationNext :disabled="props.disabled" />
     </PaginationContent>
   </Pagination>
 </template>
