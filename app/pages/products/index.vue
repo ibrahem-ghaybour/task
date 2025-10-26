@@ -61,7 +61,7 @@ const createProduct = () => router.push("/products/create");
 <template>
   <div class="space-y-6">
     <!-- Header -->
-    <div class="flex items-center justify-between">
+    <div class="flex max-md:flex-col max-md:items-start gap-2 items-center justify-between">
       <div class="flex items-center gap-2">
         <Package class="h-5 w-5" />
         <h1 class="text-xl font-semibold">Products</h1>
@@ -83,7 +83,7 @@ const createProduct = () => router.push("/products/create");
     </div>
 
     <div v-if="!productsStore.loading" class="text-sm text-muted-foreground mb-4">
-      <div class="flex items-center justify-between">
+      <div class="flex  items-center justify-between">
         <div>
           <p>Products loaded: {{ productsList.length }}</p>
           <p>Pagination: Page {{ pagination?.current_page }} of {{ pagination?.last_page }}</p>
